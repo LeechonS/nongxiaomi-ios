@@ -12,6 +12,7 @@ struct MainView: View {
     @State private var showMine = false
     @State private var showStats = false
     @State private var showDaily = false
+    @State private var showService = false
     @State private var showPlotDetail: PlotSheet?
 
     private var plots: [FarmDb.PlotRow] { appState.db.listPlots() }
@@ -47,6 +48,7 @@ struct MainView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button { showSync = true } label: { Image(systemName: "arrow.triangle.2.circlepath") }
+                    Button { showService = true } label: { Image(systemName: "storefront") }
                     Button { showMine = true } label: { Image(systemName: "person.circle") }
                 }
             }
@@ -57,6 +59,7 @@ struct MainView: View {
             .sheet(isPresented: $showMine) { MineView() }
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(isPresented: $showDaily) { DailyNoteView() }
+            .sheet(isPresented: $showService) { ServiceView() }
             .sheet(item: $showPlotDetail) { sheet in
                 PlotDetailView(plotName: sheet.name)
             }
