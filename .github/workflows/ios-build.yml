@@ -45,34 +45,30 @@ jobs:
         with:
           name: build-failure.log
           path: build.log
-      - name: 失败时把日志传回开发服务器
+      - name: 失败时把构建日志传回开发服务器
         if: failure()
-        run: curl -s -X POST --data-binary @build.log http://111.228.62.13:8910/devlog || true
-      - name: 成功时清空开发服务器日志
-        if: success()
-        run: curl -s -X POST -d "" http://111.228.62.13:8910/devlog || true
+        run: curl -s --max-time 30 -X POST --data-binary @build.log http://111.228.62.13:8910/devlog || true
       - name: 压缩成IPA
         run: |
-          # 整个打包过程带诊断: 目录结构+定位.app+压包, 失败时传回服务器
+          set -o pipefail
           {
             set -x
-            echo "--- build目录结构 ---"
-            find build -maxdepth 4 2>/dev/null | head -40 || echo "build目录不存在"
-            echo "--- 查找app包 ---"
-            APP=$(find . -name "*.app" -maxdepth 6 2>/dev/null | grep -v DerivedData | head -1)
+            echo "--- 仓库里所有 .app ---"
+            find . -name "*.app" -not -path "*/DerivedData/*" 2>/dev/null | head
+            ARCHIVE=$(find . -name "*.xcarchive" -not -path "*/DerivedData/*" 2>/dev/null | head -1)
+            echo "ARCHIVE=$ARCHIVE"
+            APP=$(find "$ARCHIVE" -name "*.app" 2>/dev/null | head -1)
             echo "APP=$APP"
+            test -n "$APP"
             mkdir -p ipa
-            # macOS构建机没有zip命令, 用系统自带的ditto压包
             ditto -c -k --sequesterRsrc "$APP" ipa/NongXiaoMi.ipa
             ls -la ipa/
-          } > pkg.log 2>&1; RC=$?
-          echo "=== 打包日志 ==="
-          cat pkg.log
-          if [ $RC -ne 0 ]; then
-            curl -s -X POST --data-binary @pkg.log http://111.228.62.13:8910/devlog || true
-            exit 1
-          fi
+          } 2>&1 | tee pkg.log
+      - name: 把打包日志传回开发服务器(无论成败)
+        if: always()
+        run: curl -s --max-time 30 -X POST --data-binary @pkg.log http://111.228.62.13:8910/devlog || echo "日志上传失败(不影响)"
       - name: 上传IPA产物
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: NongXiaoMi.ipa
