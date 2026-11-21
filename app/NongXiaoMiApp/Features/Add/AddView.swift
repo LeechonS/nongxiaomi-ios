@@ -21,6 +21,7 @@ struct AddView: View {
     @State private var photoPaths: [String] = []
     @State private var items: [ItemDraft] = []
     @State private var busy = false
+    @State private var photoData: [PhotosPickerItem] = []
 
     struct ItemDraft: Identifiable {
         let id = UUID()
@@ -35,71 +36,76 @@ struct AddView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("基础") {
-                    DatePicker("日期", selection: Binding(
-                        get: { date.isEmpty ? Date() : ISO8601TimeFormat.dateFormatter?.date(from: date) ?? Date() },
-                        set: { date = ISO8601TimeFormat.dateFormatter?.string(from: $0) ?? "" }),
-                        displayedComponents: .date)
-                    if !plots.isEmpty {
-                        Picker("地块", selection: $plot) {
-                            ForEach(plots, id: \.self) { Text($0).tag($0) }
-                        }
-                        .onChange(of: plot) { autoCrop() }
-                    } else {
-                        TextField("地块(先在地块管理里建)", text: $plot)
+            // Form内容独立成计算属性: 让类型错误暴露在自己的准确位置
+            formContent
+                .navigationTitle("记一笔")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { dismiss() }
                     }
-                    TextField("作物", text: $crop)
-                    Picker("操作", selection: $op) {
-                        ForEach(["打药", "施肥", "浇水", "除草", "采摘", "播种", "其他"], id: \.self) {
-                            Text($0)
-                        }
-                    }
-                    TextField("用量/规格(如 500g)", text: $dose)
-                }
-
-                Section("品项明细(可选, 可加照片)") {
-                    ForEach($items) { $item in
-                        VStack(spacing: 0) {
-                            TextField("名称", text: $item.name)
-                            TextField("用量", text: $item.dose)
-                            TextField("备注", text: $item.note)
-                        }
-                    }
-                    Button {
-                        items.append(ItemDraft())
-                    } label: {
-                        Label("加一项", systemImage: "plus")
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("保存") { save() }
+                            .disabled(busy || plot.isEmpty)
                     }
                 }
+                .onChange(of: photoData) { _ in loadPhotos() }
+        }
+    }
 
-                Section("照片(可选)") {
-                    PhotosPicker(selection: $photoData, maxSelectionCount: 6,
-                                  matching: .images) {
-                        Label(photoPaths.isEmpty ? "拍照/选图" : "已选 \(photoPaths.count) 张",
-                              systemImage: "camera")
+    private var formContent: some View {
+        Form {
+            Section("基础") {
+                DatePicker("日期", selection: Binding(
+                    get: { date.isEmpty ? Date() : ISO8601TimeFormat.dateFormatter?.date(from: date) ?? Date() },
+                    set: { date = ISO8601TimeFormat.dateFormatter?.string(from: $0) ?? "" }),
+                    displayedComponents: .date)
+                if !plots.isEmpty {
+                    Picker("地块", selection: $plot) {
+                        ForEach(plots, id: \.self) { Text($0).tag($0) }
+                    }
+                    .onChange(of: plot) { _ in autoCrop() }
+                } else {
+                    TextField("地块(先在地块管理里建)", text: $plot)
+                }
+                TextField("作物", text: $crop)
+                Picker("操作", selection: $op) {
+                    ForEach(["打药", "施肥", "浇水", "除草", "采摘", "播种", "其他"], id: \.self) { t in
+                        Text(t).tag(t)
                     }
                 }
+                TextField("用量/规格(如 500g)", text: $dose)
+            }
 
-                Section("备注") {
-                    TextField("备注", text: $note, axis: .vertical)
-                    TextField("作业方式(如 喷雾)", text: $method)
-                    TextField("天气(如 晴 28℃)", text: $weather)
-                    TextField("天气备注", text: $weatherNote)
+            Section("品项明细(可选, 可加照片)") {
+                ForEach($items) { $item in
+                    VStack(spacing: 0) {
+                        TextField("名称", text: $item.name)
+                        TextField("用量", text: $item.dose)
+                        TextField("备注", text: $item.note)
+                    }
+                }
+                Button {
+                    items.append(ItemDraft())
+                } label: {
+                    Label("加一项", systemImage: "plus")
                 }
             }
-            .navigationTitle("记一笔")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") { save() }
-                        .disabled(busy || plot.isEmpty)
+
+            Section("照片(可选)") {
+                PhotosPicker(selection: $photoData, maxSelectionCount: 6,
+                              matching: .images) {
+                    Label(photoPaths.isEmpty ? "拍照/选图" : "已选 \(photoPaths.count) 张",
+                          systemImage: "camera")
                 }
             }
-            .onChange(of: photoData) { _ in loadPhotos() }
+
+            Section("备注") {
+                TextField("备注", text: $note, axis: .vertical)
+                TextField("作业方式(如 喷雾)", text: $method)
+                TextField("天气(如 晴 28℃)", text: $weather)
+                TextField("天气备注", text: $weatherNote)
+            }
         }
     }
 
@@ -113,8 +119,6 @@ struct AddView: View {
             }
         }
     }
-
-    @State private var photoData: [PhotosPickerItem] = []
 
     // 地块作物记忆: 换地块/进页面带出最近作物; 用户手输过不覆盖
     @State private var lastAutoCrop = ""

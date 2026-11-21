@@ -259,7 +259,7 @@ extension SyncEngine {
         for m in db.listMarks() where !pooled.contains(UuidCanon.markUuid(plot: m.plot, op: m.op, date: m.date)) {
             let uu = UuidCanon.markUuid(plot: m.plot, op: m.op, date: m.date)
             var mo: [String: Any] = ["uuid": uu, "plot": m.plot, "op": m.op, "date": m.date]
-            if m.recordId != "0", let ru = recIdToUuid[Int64(m.recordId)] {
+            if m.recordId != "0", let ru = recIdToUuid[Int64(m.recordId) ?? 0] {
                 mo["rec_uuid"] = ru // 关联记录的uuid, 对端回链用
             }
             mks.append(mo)
