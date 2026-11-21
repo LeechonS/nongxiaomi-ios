@@ -1,0 +1,47 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    name: 核心协议测试(macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: 跑 NongXiaoMiCore 回归测试
+        run: cd core && swift test
+
+  build-ipa:
+    name: 打未签名IPA(供侧载)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: xcodebuild 归档(不签名)
+        run: |
+          cd app
+          xcodebuild -scheme NongXiaoMiApp \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath ../build/NongXiaoMi \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            GENERATE_INFOPLIST_FILE=YES \
+            PRODUCT_BUNDLE_IDENTIFIER=com.nongxiaomi.app \
+            INFOPLIST_KEY_CFBundleDisplayName=农小秘 \
+            INFOPLIST_KEY_UILaunchScreen_Generation=YES \
+            INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone=UIInterfaceOrientationPortrait \
+            INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads=YES \
+            archive
+      - name: 压缩成IPA
+        run: |
+          mkdir -p ipa
+          cd build/NongXiaoMi.xcarchive/Products/Applications
+          zip -r ../../ipa/NongXiaoMi.ipa NongXiaoMiApp.app
+      - name: 上传IPA产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: NongXiaoMi.ipa
+          path: ipa/NongXiaoMi.ipa
