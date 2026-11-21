@@ -54,12 +54,43 @@ jobs:
           set -o pipefail
           {
             set -x
-            echo "--- DerivedData产物结构 ---"
-            find derived/Build/Products -maxdepth 2 2>/dev/null | head -30
-            APP=derived/Build/Products/Release-iphoneos/NongXiaoMiApp.app
-            test -d "$APP"
+            P=derived/Build/Products/Release-iphoneos
+            echo "--- 构建产物 ---"
+            ls -la "$P"
+            test -f "$P/NongXiaoMiApp"
+            # SwiftPM的executableTarget只产裸可执行文件, 手工组装iOS .app包
+            mkdir -p ipa/NongXiaoMiApp.app
+            cp "$P/NongXiaoMiApp" ipa/NongXiaoMiApp.app/NongXiaoMiApp
+            cat > ipa/NongXiaoMiApp.app/Info.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+    <key>CFBundleExecutable</key><string>NongXiaoMiApp</string>
+    <key>CFBundleIdentifier</key><string>com.nongxiaomi.app</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>农小秘</string>
+    <key>CFBundleDisplayName</key><string>农小秘</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>UILaunchScreen</key><dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array><string>UIInterfaceOrientationPortrait</string></array>
+    <key>NSAppTransportSecurity</key>
+    <dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array><string>arm64</string></array>
+</dict>
+</plist>
+PLIST
+            printf 'APPL????' > ipa/NongXiaoMiApp.app/PkgInfo
             mkdir -p ipa
-            ditto -c -k --sequesterRsrc "$APP" ipa/NongXiaoMi.ipa
+            ditto -c -k --sequesterRsrc ipa/NongXiaoMiApp.app ipa/NongXiaoMi.ipa
+            rm -rf ipa/NongXiaoMiApp.app
+            echo "--- IPA内容 ---"
+            unzip -l ipa/NongXiaoMi.ipa | head -15
             ls -la ipa/
           } 2>&1 | tee pkg.log
       - name: 把打包日志传回开发服务器(无论成败)
