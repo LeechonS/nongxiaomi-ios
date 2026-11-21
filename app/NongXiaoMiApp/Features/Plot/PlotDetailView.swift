@@ -13,10 +13,10 @@ struct PlotDetailView: View {
     private var plot: FarmDb.PlotRow? {
         appState.db.listPlots().first { $0.name == plotName }
     }
-    private var records: [FarmDb.RecordRow] {
+    private var records: [RecordRow] {
         appState.db.listRecords().filter { $0.plot == plotName }
     }
-    private var ledgers: [FarmDb.LedgerRow] {
+    private var ledgers: [LedgerRow] {
         appState.db.listLedger().filter { $0.plot == plotName }
     }
 
@@ -51,7 +51,7 @@ struct PlotDetailView: View {
                         ForEach(records.reversed(), id: \.id) { r in
                             RecordListRow(r: r)
                                 .onTapGesture {
-                                    showRecord = r.id
+                                    showRecord = RecordRef(id: r.id)
                                 }
                         }
                     }
@@ -63,22 +63,22 @@ struct PlotDetailView: View {
             }
             .navigationTitle(plotName)
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(item: $showRecord) { id in
-                RecordDetailView(recordId: id)
+            .sheet(item: $showRecord) { ref in
+                RecordDetailView(recordId: ref.id)
             }
         }
     }
 
-    @State private var showRecord: Int64?
+    @State private var showRecord: RecordRef?
+}
 
-    // sheet(item:) 需要 Identifiable
-    private extension Int64 {
-        var id: Int64 { self }
-    }
+// 记录引用包装(sheet(item:)要求Identifiable)
+struct RecordRef: Identifiable {
+    let id: Int64
 }
 
 struct RecordListRow: View {
-    let r: FarmDb.RecordRow
+    let r: RecordRow
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {

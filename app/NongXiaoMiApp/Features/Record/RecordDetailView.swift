@@ -10,8 +10,8 @@ struct RecordDetailView: View {
     @State private var showDeleteConfirm = false
     @State private var showPhoto: PhotoRef?
 
-    private var rows: [FarmDb.RecordRow] { appState.db.listRecords() }
-    private var row: FarmDb.RecordRow? { rows.first { $0.id == recordId } }
+    private var rows: [RecordRow] { appState.db.listRecords() }
+    private var row: RecordRow? { rows.first { $0.id == recordId } }
     private var items: [RecordItem] { appState.db.listItems(recordId: recordId) }
 
     var body: some View {
@@ -65,11 +65,10 @@ struct RecordDetailView: View {
                         Button("删除", role: .destructive) { showDeleteConfirm = true }
                     }
                 }
-                .sheet(isPresented: $showDeleteConfirm) {
-                    ConfirmationDialog("删除这条记录?\n将同步删除到所有设备",
-                                       isPresented: $showDeleteConfirm) {
-                        delete()
-                    }
+                .confirmationDialog("删除这条记录?\n将同步删除到所有设备",
+                                    isPresented: $showDeleteConfirm) {
+                    Button("删除", role: .destructive) { delete() }
+                    Button("取消", role: .cancel) {}
                 }
                 .fullScreenCover(item: $showPhoto) { ref in
                     if let img = UIImage(contentsOfFile: ref.path) {

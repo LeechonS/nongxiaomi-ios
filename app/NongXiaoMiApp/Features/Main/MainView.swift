@@ -106,7 +106,7 @@ struct MainView: View {
                                 .foregroundColor(.orange)
                             Text("\(m.plot) · \(m.op)")
                             Spacer()
-                            Text(daysSince(m.date) + " 天前")
+                            Text("\(daysSince(m.date)) 天前")
                                 .foregroundColor(.secondary)
                         }
                         .font(.subheadline)
@@ -127,7 +127,7 @@ struct MainView: View {
         }
     }
 
-    private func money(_ leds: [FarmDb.LedgerRow]) -> String {
+    private func money(_ leds: [LedgerRow]) -> String {
         let sum = leds.reduce(0.0) { $0 + ($1.kind == "收" ? $1.amount : -$1.amount) }
         return String(format: "%.0f 元(净)", sum)
     }

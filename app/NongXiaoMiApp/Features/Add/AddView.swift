@@ -119,7 +119,8 @@ struct AddView: View {
     // 地块作物记忆: 换地块/进页面带出最近作物; 用户手输过不覆盖
     @State private var lastAutoCrop = ""
     private func autoCrop() {
-        guard let last = appState.db.lastCropForPlot(plot), !last.isEmpty else {
+        let last = appState.db.lastCropForPlot(plot)
+        guard !last.isEmpty else {
             crop = ""; return
         }
         // 用户手输过(非上次自动带出值)不覆盖

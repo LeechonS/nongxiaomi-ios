@@ -43,7 +43,7 @@ struct LedgerView: View {
 }
 
 struct LedgerRowView: View {
-    let l: FarmDb.LedgerRow
+    let l: LedgerRow
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {

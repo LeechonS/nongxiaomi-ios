@@ -16,7 +16,7 @@ final class SyncEngine {
     let db: FarmDb
     let api: ApiClient
     weak var state: AppState?
-    private let prefs = UserDefaults.standard
+    let prefs = UserDefaults.standard  // 内部可见: SyncEnginePush扩展(另一文件)也要用
     private var ticking = false
 
     /// 照片压缩(App层用UIKit; 各端重压base64必不同, 协议里contentKey已排除照片)
@@ -154,7 +154,7 @@ final class SyncEngine {
 
     @discardableResult
     func importRemote(recs: [[String: Any]]?, leds: [[String: Any]]?) async -> (recs: Int, leds: Int) {
-        var out = (0, 0)
+        var out = (recs: 0, leds: 0)
         let myPhone = api.phone  // 组数据按账号标记device: 自己上报的不导回(防自我复制)
         if let recs {
             for dict in recs {

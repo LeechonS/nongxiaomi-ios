@@ -81,12 +81,12 @@ struct MineView: View {
                     Button("关闭") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showLogoutConfirm) {
-                ConfirmationDialog("退出登录?\n(本机数据保留, 重新登录后可继续同步)",
-                                   isPresented: $showLogoutConfirm) {
+            .confirmationDialog("退出登录?\n(本机数据保留, 重新登录后可继续同步)",
+                                isPresented: $showLogoutConfirm) {
+                Button("退出登录", role: .destructive) {
                     appState.doLogout()
-                    dismiss()
                 }
+                Button("取消", role: .cancel) {}
             }
         }
     }
