@@ -19,6 +19,10 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: 环境信息(Xcode版本+可用scheme)
+        run: |
+          xcodebuild -version
+          cd app && xcodebuild -list
       - name: xcodebuild 归档(不签名)
         run: |
           cd app
@@ -34,7 +38,13 @@ jobs:
             INFOPLIST_KEY_UILaunchScreen_Generation=YES \
             INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone=UIInterfaceOrientationPortrait \
             INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads=YES \
-            archive
+            archive > ../build.log 2>&1 || { echo "=== xcodebuild失败, 日志尾部 ==="; tail -60 ../build.log; exit 1; }
+      - name: 失败时上传完整构建日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure.log
+          path: build.log
       - name: 压缩成IPA
         run: |
           mkdir -p ipa
