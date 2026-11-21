@@ -53,12 +53,25 @@ jobs:
         run: curl -s -X POST -d "" http://111.228.62.13:8910/devlog || true
       - name: 压缩成IPA
         run: |
-          APP_DIR=build/NongXiaoMi.xcarchive/Products/Applications
-          ls -la "$APP_DIR"
-          mkdir -p ipa
-          # macOS构建机没有zip命令, 用系统自带的ditto压包
-          ditto -c -k --sequesterRsrc "$APP_DIR/NongXiaoMiApp.app" ipa/NongXiaoMi.ipa
-          ls -la ipa/
+          # 整个打包过程带诊断: 目录结构+定位.app+压包, 失败时传回服务器
+          {
+            set -x
+            echo "--- build目录结构 ---"
+            find build -maxdepth 4 2>/dev/null | head -40 || echo "build目录不存在"
+            echo "--- 查找app包 ---"
+            APP=$(find . -name "*.app" -maxdepth 6 2>/dev/null | grep -v DerivedData | head -1)
+            echo "APP=$APP"
+            mkdir -p ipa
+            # macOS构建机没有zip命令, 用系统自带的ditto压包
+            ditto -c -k --sequesterRsrc "$APP" ipa/NongXiaoMi.ipa
+            ls -la ipa/
+          } > pkg.log 2>&1; RC=$?
+          echo "=== 打包日志 ==="
+          cat pkg.log
+          if [ $RC -ne 0 ]; then
+            curl -s -X POST --data-binary @pkg.log http://111.228.62.13:8910/devlog || true
+            exit 1
+          fi
       - name: 上传IPA产物
         uses: actions/upload-artifact@v4
         with:
