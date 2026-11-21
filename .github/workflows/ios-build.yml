@@ -23,13 +23,14 @@ jobs:
         run: |
           xcodebuild -version
           cd app && xcodebuild -list
-      - name: xcodebuild 归档(不签名)
+      - name: xcodebuild 构建(不签名)
         run: |
           cd app
+          # build模式(非archive): SwiftPM的archive不产出.app, build稳定产出DerivedData里的.app
           xcodebuild -scheme NongXiaoMiApp \
             -destination 'generic/platform=iOS' \
             -configuration Release \
-            -archivePath ../build/NongXiaoMi \
+            -derivedDataPath ../derived \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             GENERATE_INFOPLIST_FILE=YES \
@@ -38,7 +39,7 @@ jobs:
             INFOPLIST_KEY_UILaunchScreen_Generation=YES \
             INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone=UIInterfaceOrientationPortrait \
             INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads=YES \
-            archive > ../build.log 2>&1 || { echo "=== xcodebuild失败, 日志尾部 ==="; tail -60 ../build.log; exit 1; }
+            build > ../build.log 2>&1 || { echo "=== 构建失败, 日志尾部 ==="; tail -60 ../build.log; exit 1; }
       - name: 失败时上传完整构建日志
         if: failure()
         uses: actions/upload-artifact@v4
@@ -48,18 +49,15 @@ jobs:
       - name: 失败时把构建日志传回开发服务器
         if: failure()
         run: curl -s --max-time 30 -X POST --data-binary @build.log http://111.228.62.13:8910/devlog || true
-      - name: 压缩成IPA
+      - name: 打包IPA
         run: |
           set -o pipefail
           {
             set -x
-            echo "--- 仓库里所有 .app ---"
-            find . -name "*.app" -not -path "*/DerivedData/*" 2>/dev/null | head
-            ARCHIVE=$(find . -name "*.xcarchive" -not -path "*/DerivedData/*" 2>/dev/null | head -1)
-            echo "ARCHIVE=$ARCHIVE"
-            APP=$(find "$ARCHIVE" -name "*.app" 2>/dev/null | head -1)
-            echo "APP=$APP"
-            test -n "$APP"
+            echo "--- DerivedData产物结构 ---"
+            find derived/Build/Products -maxdepth 2 2>/dev/null | head -30
+            APP=derived/Build/Products/Release-iphoneos/NongXiaoMiApp.app
+            test -d "$APP"
             mkdir -p ipa
             ditto -c -k --sequesterRsrc "$APP" ipa/NongXiaoMi.ipa
             ls -la ipa/
