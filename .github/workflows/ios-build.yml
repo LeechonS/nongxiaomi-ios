@@ -53,9 +53,12 @@ jobs:
         run: curl -s -X POST -d "" http://111.228.62.13:8910/devlog || true
       - name: 压缩成IPA
         run: |
+          APP_DIR=build/NongXiaoMi.xcarchive/Products/Applications
+          ls -la "$APP_DIR"
           mkdir -p ipa
-          cd build/NongXiaoMi.xcarchive/Products/Applications
-          zip -r ../../ipa/NongXiaoMi.ipa NongXiaoMiApp.app
+          # macOS构建机没有zip命令, 用系统自带的ditto压包
+          ditto -c -k --sequesterRsrc "$APP_DIR/NongXiaoMiApp.app" ipa/NongXiaoMi.ipa
+          ls -la ipa/
       - name: 上传IPA产物
         uses: actions/upload-artifact@v4
         with:
