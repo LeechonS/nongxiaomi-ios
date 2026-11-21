@@ -64,10 +64,18 @@ final class AppState: ObservableObject {
         do {
             let db = try FarmDb(path: path)
             self.db = db
-            let api = ApiClient(server: server)
-            api.token = token
-            api.device = installUid
-            api.phone = phone
+            // 存储属性未全部初始化前不能用self的计算属性 → 本地直读UserDefaults
+            let p = UserDefaults.standard
+            let srv = p.string(forKey: "sync_server") ?? "http://111.228.62.13:8910"
+            var uid = p.string(forKey: "install_uid") ?? ""
+            if uid.isEmpty {
+                uid = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(24))
+                p.set(uid, forKey: "install_uid")
+            }
+            let api = ApiClient(server: srv)
+            api.token = p.string(forKey: "auth_token") ?? ""
+            api.device = uid
+            api.phone = p.string(forKey: "auth_phone") ?? ""
             self.api = api
             let engine = SyncEngine(db: db, api: api, state: self)
             self.syncEngine = engine
