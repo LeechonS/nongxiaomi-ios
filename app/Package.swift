@@ -12,7 +12,8 @@ let package = Package(
         .executableTarget(
             name: "NongXiaoMiApp",
             dependencies: [
-                .product(name: "NongXiaoMiCore", package: "NongXiaoMiCore"),
+                // 路径依赖的包身份=目录名"core"(不是manifest名)
+                .product(name: "NongXiaoMiCore", package: "core"),
             ],
             path: "NongXiaoMiApp"
         ),
