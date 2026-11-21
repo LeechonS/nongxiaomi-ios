@@ -45,6 +45,12 @@ jobs:
         with:
           name: build-failure.log
           path: build.log
+      - name: 失败时把日志传回开发服务器
+        if: failure()
+        run: curl -s -X POST --data-binary @build.log http://111.228.62.13:8910/devlog || true
+      - name: 成功时清空开发服务器日志
+        if: success()
+        run: curl -s -X POST -d "" http://111.228.62.13:8910/devlog || true
       - name: 压缩成IPA
         run: |
           mkdir -p ipa
